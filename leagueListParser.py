@@ -14,15 +14,15 @@ def get_teams_infos(league_url):
 		rows = soup.find(id='tournament-page-participants').tbody.find_all('tr')
 		for td in rows:
 			teamName = td.text
-			url = td.a['href']
+			url = get_team_members_page_url(td.a['href'])
 			yield Team(countryName, leagueName, teamName, url)
 			
 			
 def get_team_members_page_url(team_url_sufix):
 	return baseUrl + team_url_sufix + '/sklad'
 	
-def get_players_for_team(team_url):
-	with urlopen(team_url) as f:
+def get_players_for_team(team):
+	with urlopen(team.url) as f:
 		html = f.read()
 		soup = BeautifulSoup(html, 'html.parser')
 		rows = soup.find(id='fsbody').table.tbody.find_all('tr')
@@ -44,7 +44,6 @@ if __name__ == '__main__':
 	league_url = baseUrl + '/pilka-nozna/anglia/premier-league/zespoly/'
 
 	for team in get_teams_infos(league_url):
-		team_url = get_team_members_page_url(team.url)
-		get_players_for_team(team_url)
+		get_players_for_team(team)
 		sleep(10)
 	
