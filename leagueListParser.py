@@ -3,6 +3,7 @@ from time import sleep
 from bs4 import BeautifulSoup
 from Player import Player
 from Team import Team
+from CsvWriter import CsvWriter
 
 def get_teams_infos(league_url):
 	with urlopen(league_url) as f:
@@ -26,7 +27,10 @@ def get_players_for_team(team):
 		html = f.read()
 		soup = BeautifulSoup(html, 'html.parser')
 		rows = soup.find(id='fsbody').table.tbody.find_all('tr')
+		currentParsingPosition = ""
 		for tr in rows:
+			if "player-type-title" in tr['class']:
+				currentParsingPosition = tr.td.text
 			player_number_cell = tr.find(class_='jersey-number')
 			if None != player_number_cell and not player_number_cell.text: #omit traineer
 				continue
@@ -36,14 +40,16 @@ def get_players_for_team(team):
 				country = player_name_cell.span['title']
 				name = player_name_cell.text
 				age = player_age_cell.text
-				description = f'{name} - {age} - {country}'
-				print(description)
+				yield Player(team, name, age, country, currentParsingPosition)
 
 if __name__ == '__main__':
 	baseUrl = 'http://www.flashscore.pl'
 	league_url = baseUrl + '/pilka-nozna/anglia/premier-league/zespoly/'
-
-	for team in get_teams_infos(league_url):
-		get_players_for_team(team)
-		sleep(10)
+	with CsvWriter('output.csv') as csv:
+		csv.add("Kraj", "Liga", "Klub", "Imie i nazwisko", "Wiek", "Narodowość", "Pozycja")		
+		for team in get_teams_infos(league_url):
+			print(team.name)
+			for player in get_players_for_team(team):
+				csv.add(player.playingCountry, player.leagueName, player.teamName, player.fullName, player.age, player.nationality, player.position)
+			sleep(5)
 	

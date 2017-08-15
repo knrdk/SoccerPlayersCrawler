@@ -3,7 +3,7 @@ class Player:
         self.playingCountry = team.country
         self.leagueName = team.leagueName
         self.teamName = team.name
-        self.full_name = fullName
+        self.fullName = fullName
         self.age = age
         self.nationality = nationality
         self.position = position
