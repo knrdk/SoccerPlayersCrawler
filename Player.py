@@ -1,8 +1,8 @@
 class Player:
-    def __init__(self, playingCountry, leagueName, teamName, fullName, age, nationality, position):
-        self.playingCountry = playingCountry
-        self.leagueName = leagueName
-        self.teamName = teamName
+    def __init__(self, team, fullName, age, nationality, position):
+        self.playingCountry = team.country
+        self.leagueName = team.leagueName
+        self.teamName = team.name
         self.full_name = fullName
         self.age = age
         self.nationality = nationality

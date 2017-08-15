@@ -2,9 +2,9 @@ from urllib.request import urlopen
 from time import sleep
 from bs4 import BeautifulSoup
 from Player import Player
+from Team import Team
 
-
-def get_team_url_sufixs(league_url):
+def get_teams_infos(league_url):
 	with urlopen(league_url) as f:
 		html = f.read()
 		soup = BeautifulSoup(html, 'html.parser')
@@ -14,7 +14,8 @@ def get_team_url_sufixs(league_url):
 		rows = soup.find(id='tournament-page-participants').tbody.find_all('tr')
 		for td in rows:
 			teamName = td.text
-			yield td.a['href']
+			url = td.a['href']
+			yield Team(countryName, leagueName, teamName, url)
 			
 			
 def get_team_members_page_url(team_url_sufix):
@@ -42,8 +43,8 @@ if __name__ == '__main__':
 	baseUrl = 'http://www.flashscore.pl'
 	league_url = baseUrl + '/pilka-nozna/anglia/premier-league/zespoly/'
 
-	for team_url_sufix in get_team_url_sufixs(league_url):
-		team_url = get_team_members_page_url(team_url_sufix)
+	for team in get_teams_infos(league_url):
+		team_url = get_team_members_page_url(team.url)
 		get_players_for_team(team_url)
 		sleep(10)
 	
