@@ -10,14 +10,14 @@ def get_team_url_sufixs(league_url):
 		soup = BeautifulSoup(html, 'html.parser')
 		selectedCountryList = soup.find(class_="menu selected-country-list").find(class_='head')
 		countryName = selectedCountryList.text
+		leagueName = soup.find(class_='tournament-name').text
 		rows = soup.find(id='tournament-page-participants').tbody.find_all('tr')
 		for td in rows:
-			print(td.text)
+			teamName = td.text
 			yield td.a['href']
 			
 			
 def get_team_members_page_url(team_url_sufix):
-	print(team_url_sufix)
 	return baseUrl + team_url_sufix + '/sklad'
 	
 def get_players_for_team(team_url):
