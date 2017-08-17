@@ -4,6 +4,9 @@ from bs4 import BeautifulSoup
 from Player import Player
 from Team import Team
 from CsvWriter import CsvWriter
+import datetime
+
+base_url = "http://www.flashscore.pl"
 
 def get_teams_infos(league_url):
 	with urlopen(league_url) as f:
@@ -20,7 +23,7 @@ def get_teams_infos(league_url):
 			
 			
 def get_team_members_page_url(team_url_sufix):
-	return baseUrl + team_url_sufix + '/sklad'
+	return base_url + team_url_sufix + '/sklad'
 	
 def get_players_for_team(team):
 	with urlopen(team.url) as f:
@@ -40,16 +43,36 @@ def get_players_for_team(team):
 				country = player_name_cell.span['title']
 				name = player_name_cell.text
 				age = player_age_cell.text
-				yield Player(team, name, age, country, currentParsingPosition)
+				birth_date = get_player_birth_date(player_name_cell.a['href'])
+				yield Player(team, name, birth_date, country, currentParsingPosition)
+
+def get_player_birth_date(player_url_sufix):
+	url = base_url + player_url_sufix
+	with urlopen(url) as f:
+		html = f.read()
+		soup = BeautifulSoup(html, 'html.parser')
+		birthdate_scirpt = soup.find(class_='player-birthdate').script.text
+		start_index = birthdate_scirpt.find("Age(") + 4
+		end_index = birthdate_scirpt.find(')', start_index)
+		unitTimeStamp = int(birthdate_scirpt[start_index:end_index]) + 12 * 3600
+		date = datetime.datetime.fromtimestamp(unitTimeStamp).strftime('%Y-%m-%d')
+		return date
+
+def get_urls_to_parse():
+	yield 'http://www.flashscore.pl/pilka-nozna/anglia/premier-league/zespoly/'
+
+def get_file_name_from_url(url):
+	splitted_url = url.split('/')
+	return splitted_url[-4] + "+" + splitted_url[-3] + ".csv"
 
 if __name__ == '__main__':
-	baseUrl = 'http://www.flashscore.pl'
-	league_url = baseUrl + '/pilka-nozna/anglia/premier-league/zespoly/'
-	with CsvWriter('output.csv') as csv:
-		csv.add("Kraj", "Liga", "Klub", "Imie i nazwisko", "Wiek", "Narodowość", "Pozycja")		
-		for team in get_teams_infos(league_url):
-			print(team.name)
-			for player in get_players_for_team(team):
-				csv.add(player.playingCountry, player.leagueName, player.teamName, player.fullName, player.age, player.nationality, player.position)
-			sleep(5)
-	
+	for url in get_urls_to_parse():
+		file_name = get_file_name_from_url(url)
+		with CsvWriter(file_name) as csv:
+			csv.add("Kraj", "Liga", "Klub", "Imie i nazwisko", "Data urodzenia", "Narodowość", "Pozycja")		
+			for team in get_teams_infos(url):
+				print(team.name)
+				for player in get_players_for_team(team):
+					csv.add(player.playingCountry, player.leagueName, player.teamName, player.fullName, player.age, player.nationality, player.position)
+				sleep(2)
+
