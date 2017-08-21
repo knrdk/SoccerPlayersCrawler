@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from Player import Player
 from Team import Team
 from CsvWriter import CsvWriter
-import datetime
+from datetime import datetime, timedelta
 
 base_url = "http://www.flashscore.pl"
 
@@ -29,7 +29,13 @@ def get_players_for_team(team):
 	with urlopen(team.url) as f:
 		html = f.read()
 		soup = BeautifulSoup(html, 'html.parser')
-		rows = soup.find(id='fsbody').table.tbody.find_all('tr')
+		table = soup.find(id='fsbody').table
+		if None ==  table:
+			return
+		tbody = table.tbody
+		if None == tbody:
+			return
+		rows = tbody.find_all('tr')		
 		currentParsingPosition = ""
 		for tr in rows:
 			if "player-type-title" in tr['class']:
@@ -51,15 +57,25 @@ def get_player_birth_date(player_url_sufix):
 	with urlopen(url) as f:
 		html = f.read()
 		soup = BeautifulSoup(html, 'html.parser')
-		birthdate_scirpt = soup.find(class_='player-birthdate').script.text
+		birthdate_div = soup.find(class_='player-birthdate')
+		if None == birthdate_div:
+			return ""
+		birthdate_scirpt = birthdate_div.script.text
 		start_index = birthdate_scirpt.find("Age(") + 4
 		end_index = birthdate_scirpt.find(')', start_index)
 		unitTimeStamp = int(birthdate_scirpt[start_index:end_index]) + 12 * 3600
-		date = datetime.datetime.fromtimestamp(unitTimeStamp).strftime('%Y-%m-%d')
-		return date
+
+		if unitTimeStamp < 0:
+			date = datetime(1970, 1, 1) + timedelta(seconds=unitTimeStamp)
+		else:
+			date = datetime.fromtimestamp(unitTimeStamp)
+
+		return date.strftime('%Y-%m-%d')
 
 def get_urls_to_parse():
-	yield 'http://www.flashscore.pl/pilka-nozna/anglia/premier-league/zespoly/'
+	with open('input.txt') as f:
+		for line in f:
+			yield line
 
 def get_file_name_from_url(url):
 	splitted_url = url.split('/')
@@ -75,4 +91,6 @@ if __name__ == '__main__':
 				for player in get_players_for_team(team):
 					csv.add(player.playingCountry, player.leagueName, player.teamName, player.fullName, player.age, player.nationality, player.position)
 				sleep(2)
+
+
 
